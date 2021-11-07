@@ -36,7 +36,7 @@ namespace ConsoleApp1
 
             public XsmpClient()
             {
-                var errorBuf = new byte[127];
+                var errorBuf = new byte[255];
 
                 var x = new SmcCallbacks
                 {
@@ -45,8 +45,7 @@ namespace ConsoleApp1
                     save_yourself = Marshal.GetFunctionPointerForDelegate(SmcSaveYourselfProcDelegate),
                     save_complete = Marshal.GetFunctionPointerForDelegate(SmcSaveCompleteDelegate)
                 };
-
-
+                
                 if (IceAddConnectionWatch(Marshal.GetFunctionPointerForDelegate(IceWatchProcDelegate),
                     IntPtr.Zero) == 0)
                 {
@@ -80,14 +79,13 @@ namespace ConsoleApp1
                 {
                     while (true)
                     {
-                        xsmp_handle_requests();
-                        // Thread.Sleep(10);
+                        HandleRequests();
                     }
                 });
             }
 
 
-            void xsmp_handle_requests()
+            void HandleRequests()
             {
 
                 if (IceProcessMessages(xsmp_iceconn, out var a, out var rep) == IceProcessMessagesStatus.IceProcessMessagesIOError)
@@ -99,12 +97,12 @@ namespace ConsoleApp1
                 else
                 {
                     Console.WriteLine("XSMP IceProcessMessages\n");
-                    
                 }
             }
 
             public static IceConn xsmp_iceconn;
             public static readonly int dummy = 0;
+            public static bool isFirstOneSaveYourselfCall ;
 
             public static readonly SmcSaveYourselfProc SmcSaveYourselfProcDelegate = SmcSaveYourselfHandler;
             public static readonly SmcDieProc SmcDieDelegate = SmcDieHandler;
@@ -153,16 +151,17 @@ namespace ConsoleApp1
             {
                 Console.WriteLine("SmcSaveYourselfHandler");
 
-                if (xsmp_save_yourself)
-                    SmcSaveYourselfDone(smcConn, false);
-                xsmp_save_yourself = true;
+                if (isFirstOneSaveYourselfCall)
+                {
+                    SmcSaveYourselfDone(smcConn, true);
+                }
+
+                isFirstOneSaveYourselfCall = true;
+                 
                 xsmp_shutdown = shutdown;
                 SmcSaveYourselfDone(smcConn, false);
             }
-
-
-            private static int xsmp_icefd;
-
+            
             static void IceWatchHandler(
                 IceConn iceConn,
                 IcePointer clientData,
@@ -171,7 +170,6 @@ namespace ConsoleApp1
             )
             {
                 if (!opening) return;
-                xsmp_icefd = IceConnectionNumber(iceConn);
                 IceRemoveConnectionWatch(Marshal.GetFunctionPointerForDelegate(IceWatchProcDelegate), IntPtr.Zero);
             }
 
@@ -217,41 +215,7 @@ namespace ConsoleApp1
             {
                 public int Length;
                 public SmPointer Value;
-            }
-            //
-            // [StructLayout(LayoutKind.Sequential)]
-            // public struct SmcCallbacks
-            // {
-            //     public delegate* unmanaged[Cdecl] <
-            //         SmcConn  smcConn ,
-            //         SmPointer  clientData ,
-            //         int  saveType ,
-            //         bool  shutdown ,
-            //         int  interactStyle ,
-            //         bool  fast ,
-            //         void > save_yourself;
-            //
-            //     public SmPointer save_yourself_client_data;
-            //
-            //     public delegate* unmanaged[Cdecl] <
-            //         SmcConn  smcConn ,
-            //         SmPointer  clientData ,
-            //         void> die;
-            //
-            //     public SmPointer die_client_data;
-            //
-            //     public delegate* unmanaged[Cdecl] < SmcConn  smcConn ,
-            //         SmPointer  clientData ,
-            //         void> save_complete;
-            //
-            //     public SmPointer save_complete_client_data;
-            //
-            //     public delegate* unmanaged[Cdecl] < SmcConn  smcConn ,
-            //         SmPointer  clientData ,
-            //         void> shutdown_cancelled;
-            //
-            //     public SmPointer shutdown_cancelled_client_data;
-            // }
+            } 
 
 
             [StructLayout(LayoutKind.Sequential)]
