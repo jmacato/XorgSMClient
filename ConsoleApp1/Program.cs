@@ -104,29 +104,46 @@ namespace ConsoleApp1
             }
 
             
+            [StructLayout(LayoutKind.Sequential, Size = 64)]
+            public struct SmcCallbacksX
+            {
+                public delegate* <
+                    IntPtr /* smcConn */,
+                    IntPtr /* clientData */,
+                    int /* saveType */,
+                    bool /* shutdown */,
+                    int /* interactStyle */,
+                    bool /* fast */,
+                    void > save_yourself;
+            
+                public IntPtr save_yourself_client_data;
+            
+                public delegate* unmanaged[Cdecl] <
+                    IntPtr /* smcConn */,
+                    IntPtr /* clientData */,
+                    void> die;
+            
+                public IntPtr die_client_data;
+            
+                public delegate* < IntPtr /* smcConn */,
+                    IntPtr /* clientData */,
+                    void> save_complete;
+            
+                public IntPtr save_complete_client_data;
+            
+                public delegate* < IntPtr /* smcConn */,
+                    IntPtr /* clientData */,
+                    void> shutdown_cancelled;
+            
+                public IntPtr shutdown_cancelled_client_data;
+            }
+            
+            
 
             public XsmpClient()
             {
-                
-                var sd = new SmcCallbacks {die = new SmcCallbacks.Die {Callback = (ptr, intPtr) => { }}};
-
-                sd.die = new SmcCallbacks.Die {Callback = (ptr, intPtr) => { Console.WriteLine("ugh"); }};
-
-                sd.save_complete = new SmcCallbacks.SaveComplete
-                {
-                    Callback = (ptr, intPtr) => { Console.WriteLine("ugh"); }
-                };
-
-                sd.save_yourself = new SmcCallbacks.SaveYourself
-                {
-                    Callback = SmsSaveYourselfRequestProc
-                };
-
-                sd.shutdown_cancelled = new SmcCallbacks.ShutdownCancelled
-                {
-                    Callback = (ptr, intPtr) => { Console.WriteLine("ugh"); }
-                };
-
+                var sd = new SmcCallbacks();
+ 
                 var errorBuf = new sbyte[127];
                 fixed (sbyte* p = errorBuf)
                 {

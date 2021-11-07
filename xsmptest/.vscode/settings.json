@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "smlib.h": "c",
+        "string.h": "c",
+        "icelib.h": "c",
+        "stdlib.h": "c"
+    }
+}
