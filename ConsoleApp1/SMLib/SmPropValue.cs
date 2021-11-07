@@ -1,24 +1,25 @@
 using System;
+using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
 using System.Security;
 
-namespace ConsoleApp1.SMLib
+namespace SMLib
 {
-    public unsafe partial class SmPropValue : IDisposable
+    public unsafe class SmPropValue : IDisposable
     {
         [StructLayout(LayoutKind.Sequential, Size = 16)]
-        public partial struct __Internal
+        public struct __Internal
         {
             internal int length;
             internal IntPtr value;
 
-            [SuppressUnmanagedCodeSecurity, DllImport("SMLib", EntryPoint = "_ZN11SmPropValueC2ERKS_", CallingConvention = CallingConvention.Cdecl)]
+            [SuppressUnmanagedCodeSecurity, DllImport("libSM.so.6", EntryPoint = "_ZN11SmPropValueC2ERKS_", CallingConvention = CallingConvention.Cdecl)]
             internal static extern void cctor(IntPtr __instance, IntPtr __0);
         }
 
         public IntPtr __Instance { get; protected set; }
 
-        internal static readonly global::System.Collections.Concurrent.ConcurrentDictionary<IntPtr, global::SMLib.SmPropValue> NativeToManagedMap = new global::System.Collections.Concurrent.ConcurrentDictionary<IntPtr, global::SMLib.SmPropValue>();
+        internal static readonly ConcurrentDictionary<IntPtr, SmPropValue> NativeToManagedMap = new ConcurrentDictionary<IntPtr, SmPropValue>();
 
         protected bool __ownsNativeInstance;
 
@@ -32,7 +33,7 @@ namespace ConsoleApp1.SMLib
             if (native == IntPtr.Zero)
                 return null;
             if (NativeToManagedMap.TryGetValue(native, out var managed))
-                return (SmPropValue)managed;
+                return managed;
             var result = __CreateInstance(native, skipVTables);
             if (saveInstance)
                 NativeToManagedMap[native] = result;
@@ -67,17 +68,17 @@ namespace ConsoleApp1.SMLib
 
         public SmPropValue()
         {
-            __Instance = Marshal.AllocHGlobal(sizeof(global::SMLib.SmPropValue.__Internal));
+            __Instance = Marshal.AllocHGlobal(sizeof(__Internal));
             __ownsNativeInstance = true;
             NativeToManagedMap[__Instance] = this;
         }
 
-        public SmPropValue(global::SMLib.SmPropValue __0)
+        public SmPropValue(SmPropValue __0)
         {
-            __Instance = Marshal.AllocHGlobal(sizeof(global::SMLib.SmPropValue.__Internal));
+            __Instance = Marshal.AllocHGlobal(sizeof(__Internal));
             __ownsNativeInstance = true;
             NativeToManagedMap[__Instance] = this;
-            *((global::SMLib.SmPropValue.__Internal*) __Instance) = *((global::SMLib.SmPropValue.__Internal*) __0.__Instance);
+            *((__Internal*) __Instance) = *((__Internal*) __0.__Instance);
         }
 
         public void Dispose()
@@ -85,7 +86,10 @@ namespace ConsoleApp1.SMLib
             Dispose(disposing: true, callNativeDtor : __ownsNativeInstance );
         }
 
-        partial void DisposePartial(bool disposing);
+        private void DisposePartial(bool disposing)
+        {
+            throw new NotImplementedException();
+        }
 
         internal protected virtual void Dispose(bool disposing, bool callNativeDtor )
         {
@@ -120,7 +124,7 @@ namespace ConsoleApp1.SMLib
 
             set
             {
-                ((__Internal*)__Instance)->value = (IntPtr) value;
+                ((__Internal*)__Instance)->value = value;
             }
         }
     }

@@ -1,17 +1,18 @@
 using System;
+using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
 
-namespace ConsoleApp1.SMLib
+namespace SMLib
 {
-    public unsafe partial class SmcConn
+    public unsafe class SmcConn
     {
-        public partial struct __Internal
+        public struct __Internal
         {
         }
 
         public IntPtr __Instance { get; protected set; }
 
-        internal static readonly global::System.Collections.Concurrent.ConcurrentDictionary<IntPtr, global::SMLib.SmcConn> NativeToManagedMap = new global::System.Collections.Concurrent.ConcurrentDictionary<IntPtr, global::SMLib.SmcConn>();
+        internal static readonly ConcurrentDictionary<IntPtr, SmcConn> NativeToManagedMap = new ConcurrentDictionary<IntPtr, SmcConn>();
 
         protected bool __ownsNativeInstance;
 
@@ -25,7 +26,7 @@ namespace ConsoleApp1.SMLib
             if (native == IntPtr.Zero)
                 return null;
             if (NativeToManagedMap.TryGetValue(native, out var managed))
-                return (SmcConn)managed;
+                return managed;
             var result = __CreateInstance(native, skipVTables);
             if (saveInstance)
                 NativeToManagedMap[native] = result;

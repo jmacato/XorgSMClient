@@ -1,4 +1,4 @@
-namespace ConsoleApp1.SMLib
+namespace SMLib
 {
     public enum SmcCloseStatus : uint
     {

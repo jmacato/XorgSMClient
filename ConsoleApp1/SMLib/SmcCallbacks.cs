@@ -1,38 +1,39 @@
 using System;
+using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
 using System.Security;
 
-namespace ConsoleApp1.SMLib
+namespace SMLib
 {
-    public unsafe partial class SmcCallbacks : IDisposable
+    public unsafe class SmcCallbacks : IDisposable
     {
         [StructLayout(LayoutKind.Sequential, Size = 64)]
-        public partial struct __Internal
+        public struct __Internal
         {
-            internal global::SMLib.SmcCallbacks.SaveYourself.__Internal save_yourself;
-            internal global::SMLib.SmcCallbacks.Die.__Internal die;
-            internal global::SMLib.SmcCallbacks.SaveComplete.__Internal save_complete;
-            internal global::SMLib.SmcCallbacks.ShutdownCancelled.__Internal shutdown_cancelled;
+            internal SaveYourself.__Internal save_yourself;
+            internal Die.__Internal die;
+            internal SaveComplete.__Internal save_complete;
+            internal ShutdownCancelled.__Internal shutdown_cancelled;
 
-            [SuppressUnmanagedCodeSecurity, DllImport("SMLib", EntryPoint = "_ZN12SmcCallbacksC2ERKS_", CallingConvention = CallingConvention.Cdecl)]
+            [SuppressUnmanagedCodeSecurity, DllImport("libSM.so.6", EntryPoint = "_ZN12SmcCallbacksC2ERKS_", CallingConvention = CallingConvention.Cdecl)]
             internal static extern void cctor(IntPtr __instance, IntPtr __0);
         }
 
-        public unsafe partial class SaveYourself : IDisposable
+        public class SaveYourself : IDisposable
         {
             [StructLayout(LayoutKind.Sequential, Size = 16)]
-            public partial struct __Internal
+            public struct __Internal
             {
                 internal IntPtr callback;
                 internal IntPtr client_data;
 
-                [SuppressUnmanagedCodeSecurity, DllImport("SMLib", EntryPoint = "_ZN12SmcCallbacksUt_C2ERKS0_", CallingConvention = CallingConvention.Cdecl)]
+                [SuppressUnmanagedCodeSecurity, DllImport("libSM.so.6", EntryPoint = "_ZN12SmcCallbacksUt_C2ERKS0_", CallingConvention = CallingConvention.Cdecl)]
                 internal static extern void cctor(IntPtr __instance, IntPtr __0);
             }
 
             public IntPtr __Instance { get; protected set; }
 
-            internal static readonly global::System.Collections.Concurrent.ConcurrentDictionary<IntPtr, global::SMLib.SmcCallbacks.SaveYourself> NativeToManagedMap = new global::System.Collections.Concurrent.ConcurrentDictionary<IntPtr, global::SMLib.SmcCallbacks.SaveYourself>();
+            internal static readonly ConcurrentDictionary<IntPtr, SaveYourself> NativeToManagedMap = new ConcurrentDictionary<IntPtr, SaveYourself>();
 
             protected bool __ownsNativeInstance;
 
@@ -46,7 +47,7 @@ namespace ConsoleApp1.SMLib
                 if (native == IntPtr.Zero)
                     return null;
                 if (NativeToManagedMap.TryGetValue(native, out var managed))
-                    return (SaveYourself)managed;
+                    return managed;
                 var result = __CreateInstance(native, skipVTables);
                 if (saveInstance)
                     NativeToManagedMap[native] = result;
@@ -81,17 +82,17 @@ namespace ConsoleApp1.SMLib
 
             public SaveYourself()
             {
-                __Instance = Marshal.AllocHGlobal(sizeof(global::SMLib.SmcCallbacks.SaveYourself.__Internal));
+                __Instance = Marshal.AllocHGlobal(sizeof(__Internal));
                 __ownsNativeInstance = true;
                 NativeToManagedMap[__Instance] = this;
             }
 
-            public SaveYourself(global::SMLib.SmcCallbacks.SaveYourself __0)
+            public SaveYourself(SaveYourself __0)
             {
-                __Instance = Marshal.AllocHGlobal(sizeof(global::SMLib.SmcCallbacks.SaveYourself.__Internal));
+                __Instance = Marshal.AllocHGlobal(sizeof(__Internal));
                 __ownsNativeInstance = true;
                 NativeToManagedMap[__Instance] = this;
-                *((global::SMLib.SmcCallbacks.SaveYourself.__Internal*) __Instance) = *((global::SMLib.SmcCallbacks.SaveYourself.__Internal*) __0.__Instance);
+                *((__Internal*) __Instance) = *((__Internal*) __0.__Instance);
             }
 
             public void Dispose()
@@ -99,7 +100,10 @@ namespace ConsoleApp1.SMLib
                 Dispose(disposing: true, callNativeDtor : __ownsNativeInstance );
             }
 
-            partial void DisposePartial(bool disposing);
+            private void DisposePartial(bool disposing)
+            {
+                throw new NotImplementedException();
+            }
 
             internal protected virtual void Dispose(bool disposing, bool callNativeDtor )
             {
@@ -112,17 +116,17 @@ namespace ConsoleApp1.SMLib
                 __Instance = IntPtr.Zero;
             }
 
-            public global::SMLib.SmcSaveYourselfProc Callback
+            public SmcSaveYourselfProc Callback
             {
                 get
                 {
                     var __ptr0 = ((__Internal*)__Instance)->callback;
-                    return __ptr0 == IntPtr.Zero? null : (global::SMLib.SmcSaveYourselfProc) Marshal.GetDelegateForFunctionPointer(__ptr0, typeof(global::SMLib.SmcSaveYourselfProc));
+                    return __ptr0 == IntPtr.Zero? null : (SmcSaveYourselfProc) Marshal.GetDelegateForFunctionPointer(__ptr0, typeof(SmcSaveYourselfProc));
                 }
 
                 set
                 {
-                    ((__Internal*)__Instance)->callback = value == null ? global::System.IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(value);
+                    ((__Internal*)__Instance)->callback = value == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(value);
                 }
             }
 
@@ -135,26 +139,26 @@ namespace ConsoleApp1.SMLib
 
                 set
                 {
-                    ((__Internal*)__Instance)->client_data = (IntPtr) value;
+                    ((__Internal*)__Instance)->client_data = value;
                 }
             }
         }
 
-        public unsafe partial class Die : IDisposable
+        public class Die : IDisposable
         {
             [StructLayout(LayoutKind.Sequential, Size = 16)]
-            public partial struct __Internal
+            public struct __Internal
             {
                 internal IntPtr callback;
                 internal IntPtr client_data;
 
-                [SuppressUnmanagedCodeSecurity, DllImport("SMLib", EntryPoint = "_ZN12SmcCallbacksUt0_C2ERKS0_", CallingConvention = CallingConvention.Cdecl)]
+                [SuppressUnmanagedCodeSecurity, DllImport("libSM.so.6", EntryPoint = "_ZN12SmcCallbacksUt0_C2ERKS0_", CallingConvention = CallingConvention.Cdecl)]
                 internal static extern void cctor(IntPtr __instance, IntPtr __0);
             }
 
             public IntPtr __Instance { get; protected set; }
 
-            internal static readonly global::System.Collections.Concurrent.ConcurrentDictionary<IntPtr, global::SMLib.SmcCallbacks.Die> NativeToManagedMap = new global::System.Collections.Concurrent.ConcurrentDictionary<IntPtr, global::SMLib.SmcCallbacks.Die>();
+            internal static readonly ConcurrentDictionary<IntPtr, Die> NativeToManagedMap = new ConcurrentDictionary<IntPtr, Die>();
 
             protected bool __ownsNativeInstance;
 
@@ -168,7 +172,7 @@ namespace ConsoleApp1.SMLib
                 if (native == IntPtr.Zero)
                     return null;
                 if (NativeToManagedMap.TryGetValue(native, out var managed))
-                    return (Die)managed;
+                    return managed;
                 var result = __CreateInstance(native, skipVTables);
                 if (saveInstance)
                     NativeToManagedMap[native] = result;
@@ -203,17 +207,17 @@ namespace ConsoleApp1.SMLib
 
             public Die()
             {
-                __Instance = Marshal.AllocHGlobal(sizeof(global::SMLib.SmcCallbacks.Die.__Internal));
+                __Instance = Marshal.AllocHGlobal(sizeof(__Internal));
                 __ownsNativeInstance = true;
                 NativeToManagedMap[__Instance] = this;
             }
 
-            public Die(global::SMLib.SmcCallbacks.Die __0)
+            public Die(Die __0)
             {
-                __Instance = Marshal.AllocHGlobal(sizeof(global::SMLib.SmcCallbacks.Die.__Internal));
+                __Instance = Marshal.AllocHGlobal(sizeof(__Internal));
                 __ownsNativeInstance = true;
                 NativeToManagedMap[__Instance] = this;
-                *((global::SMLib.SmcCallbacks.Die.__Internal*) __Instance) = *((global::SMLib.SmcCallbacks.Die.__Internal*) __0.__Instance);
+                *((__Internal*) __Instance) = *((__Internal*) __0.__Instance);
             }
 
             public void Dispose()
@@ -221,7 +225,10 @@ namespace ConsoleApp1.SMLib
                 Dispose(disposing: true, callNativeDtor : __ownsNativeInstance );
             }
 
-            partial void DisposePartial(bool disposing);
+            private void DisposePartial(bool disposing)
+            {
+                throw new NotImplementedException();
+            }
 
             internal protected virtual void Dispose(bool disposing, bool callNativeDtor )
             {
@@ -234,17 +241,17 @@ namespace ConsoleApp1.SMLib
                 __Instance = IntPtr.Zero;
             }
 
-            public global::SMLib.SmcDieProc Callback
+            public SmcDieProc Callback
             {
                 get
                 {
                     var __ptr0 = ((__Internal*)__Instance)->callback;
-                    return __ptr0 == IntPtr.Zero? null : (global::SMLib.SmcDieProc) Marshal.GetDelegateForFunctionPointer(__ptr0, typeof(global::SMLib.SmcDieProc));
+                    return __ptr0 == IntPtr.Zero? null : (SmcDieProc) Marshal.GetDelegateForFunctionPointer(__ptr0, typeof(SmcDieProc));
                 }
 
                 set
                 {
-                    ((__Internal*)__Instance)->callback = value == null ? global::System.IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(value);
+                    ((__Internal*)__Instance)->callback = value == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(value);
                 }
             }
 
@@ -257,26 +264,26 @@ namespace ConsoleApp1.SMLib
 
                 set
                 {
-                    ((__Internal*)__Instance)->client_data = (IntPtr) value;
+                    ((__Internal*)__Instance)->client_data = value;
                 }
             }
         }
 
-        public unsafe partial class SaveComplete : IDisposable
+        public class SaveComplete : IDisposable
         {
             [StructLayout(LayoutKind.Sequential, Size = 16)]
-            public partial struct __Internal
+            public struct __Internal
             {
                 internal IntPtr callback;
                 internal IntPtr client_data;
 
-                [SuppressUnmanagedCodeSecurity, DllImport("SMLib", EntryPoint = "_ZN12SmcCallbacksUt1_C2ERKS0_", CallingConvention = CallingConvention.Cdecl)]
+                [SuppressUnmanagedCodeSecurity, DllImport("libSM.so.6", EntryPoint = "_ZN12SmcCallbacksUt1_C2ERKS0_", CallingConvention = CallingConvention.Cdecl)]
                 internal static extern void cctor(IntPtr __instance, IntPtr __0);
             }
 
             public IntPtr __Instance { get; protected set; }
 
-            internal static readonly global::System.Collections.Concurrent.ConcurrentDictionary<IntPtr, global::SMLib.SmcCallbacks.SaveComplete> NativeToManagedMap = new global::System.Collections.Concurrent.ConcurrentDictionary<IntPtr, global::SMLib.SmcCallbacks.SaveComplete>();
+            internal static readonly ConcurrentDictionary<IntPtr, SaveComplete> NativeToManagedMap = new ConcurrentDictionary<IntPtr, SaveComplete>();
 
             protected bool __ownsNativeInstance;
 
@@ -290,7 +297,7 @@ namespace ConsoleApp1.SMLib
                 if (native == IntPtr.Zero)
                     return null;
                 if (NativeToManagedMap.TryGetValue(native, out var managed))
-                    return (SaveComplete)managed;
+                    return managed;
                 var result = __CreateInstance(native, skipVTables);
                 if (saveInstance)
                     NativeToManagedMap[native] = result;
@@ -325,17 +332,17 @@ namespace ConsoleApp1.SMLib
 
             public SaveComplete()
             {
-                __Instance = Marshal.AllocHGlobal(sizeof(global::SMLib.SmcCallbacks.SaveComplete.__Internal));
+                __Instance = Marshal.AllocHGlobal(sizeof(__Internal));
                 __ownsNativeInstance = true;
                 NativeToManagedMap[__Instance] = this;
             }
 
-            public SaveComplete(global::SMLib.SmcCallbacks.SaveComplete __0)
+            public SaveComplete(SaveComplete __0)
             {
-                __Instance = Marshal.AllocHGlobal(sizeof(global::SMLib.SmcCallbacks.SaveComplete.__Internal));
+                __Instance = Marshal.AllocHGlobal(sizeof(__Internal));
                 __ownsNativeInstance = true;
                 NativeToManagedMap[__Instance] = this;
-                *((global::SMLib.SmcCallbacks.SaveComplete.__Internal*) __Instance) = *((global::SMLib.SmcCallbacks.SaveComplete.__Internal*) __0.__Instance);
+                *((__Internal*) __Instance) = *((__Internal*) __0.__Instance);
             }
 
             public void Dispose()
@@ -343,7 +350,10 @@ namespace ConsoleApp1.SMLib
                 Dispose(disposing: true, callNativeDtor : __ownsNativeInstance );
             }
 
-            partial void DisposePartial(bool disposing);
+            private void DisposePartial(bool disposing)
+            {
+                throw new NotImplementedException();
+            }
 
             internal protected virtual void Dispose(bool disposing, bool callNativeDtor )
             {
@@ -356,17 +366,17 @@ namespace ConsoleApp1.SMLib
                 __Instance = IntPtr.Zero;
             }
 
-            public global::SMLib.SmcSaveCompleteProc Callback
+            public SmcSaveCompleteProc Callback
             {
                 get
                 {
                     var __ptr0 = ((__Internal*)__Instance)->callback;
-                    return __ptr0 == IntPtr.Zero? null : (global::SMLib.SmcSaveCompleteProc) Marshal.GetDelegateForFunctionPointer(__ptr0, typeof(global::SMLib.SmcSaveCompleteProc));
+                    return __ptr0 == IntPtr.Zero? null : (SmcSaveCompleteProc) Marshal.GetDelegateForFunctionPointer(__ptr0, typeof(SmcSaveCompleteProc));
                 }
 
                 set
                 {
-                    ((__Internal*)__Instance)->callback = value == null ? global::System.IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(value);
+                    ((__Internal*)__Instance)->callback = value == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(value);
                 }
             }
 
@@ -379,26 +389,26 @@ namespace ConsoleApp1.SMLib
 
                 set
                 {
-                    ((__Internal*)__Instance)->client_data = (IntPtr) value;
+                    ((__Internal*)__Instance)->client_data = value;
                 }
             }
         }
 
-        public unsafe partial class ShutdownCancelled : IDisposable
+        public class ShutdownCancelled : IDisposable
         {
             [StructLayout(LayoutKind.Sequential, Size = 16)]
-            public partial struct __Internal
+            public struct __Internal
             {
                 internal IntPtr callback;
                 internal IntPtr client_data;
 
-                [SuppressUnmanagedCodeSecurity, DllImport("SMLib", EntryPoint = "_ZN12SmcCallbacksUt2_C2ERKS0_", CallingConvention = CallingConvention.Cdecl)]
+                [SuppressUnmanagedCodeSecurity, DllImport("libSM.so.6", EntryPoint = "_ZN12SmcCallbacksUt2_C2ERKS0_", CallingConvention = CallingConvention.Cdecl)]
                 internal static extern void cctor(IntPtr __instance, IntPtr __0);
             }
 
             public IntPtr __Instance { get; protected set; }
 
-            internal static readonly global::System.Collections.Concurrent.ConcurrentDictionary<IntPtr, global::SMLib.SmcCallbacks.ShutdownCancelled> NativeToManagedMap = new global::System.Collections.Concurrent.ConcurrentDictionary<IntPtr, global::SMLib.SmcCallbacks.ShutdownCancelled>();
+            internal static readonly ConcurrentDictionary<IntPtr, ShutdownCancelled> NativeToManagedMap = new ConcurrentDictionary<IntPtr, ShutdownCancelled>();
 
             protected bool __ownsNativeInstance;
 
@@ -412,7 +422,7 @@ namespace ConsoleApp1.SMLib
                 if (native == IntPtr.Zero)
                     return null;
                 if (NativeToManagedMap.TryGetValue(native, out var managed))
-                    return (ShutdownCancelled)managed;
+                    return managed;
                 var result = __CreateInstance(native, skipVTables);
                 if (saveInstance)
                     NativeToManagedMap[native] = result;
@@ -447,17 +457,17 @@ namespace ConsoleApp1.SMLib
 
             public ShutdownCancelled()
             {
-                __Instance = Marshal.AllocHGlobal(sizeof(global::SMLib.SmcCallbacks.ShutdownCancelled.__Internal));
+                __Instance = Marshal.AllocHGlobal(sizeof(__Internal));
                 __ownsNativeInstance = true;
                 NativeToManagedMap[__Instance] = this;
             }
 
-            public ShutdownCancelled(global::SMLib.SmcCallbacks.ShutdownCancelled __0)
+            public ShutdownCancelled(ShutdownCancelled __0)
             {
-                __Instance = Marshal.AllocHGlobal(sizeof(global::SMLib.SmcCallbacks.ShutdownCancelled.__Internal));
+                __Instance = Marshal.AllocHGlobal(sizeof(__Internal));
                 __ownsNativeInstance = true;
                 NativeToManagedMap[__Instance] = this;
-                *((global::SMLib.SmcCallbacks.ShutdownCancelled.__Internal*) __Instance) = *((global::SMLib.SmcCallbacks.ShutdownCancelled.__Internal*) __0.__Instance);
+                *((__Internal*) __Instance) = *((__Internal*) __0.__Instance);
             }
 
             public void Dispose()
@@ -465,7 +475,10 @@ namespace ConsoleApp1.SMLib
                 Dispose(disposing: true, callNativeDtor : __ownsNativeInstance );
             }
 
-            partial void DisposePartial(bool disposing);
+            private void DisposePartial(bool disposing)
+            {
+                throw new NotImplementedException();
+            }
 
             internal protected virtual void Dispose(bool disposing, bool callNativeDtor )
             {
@@ -478,17 +491,17 @@ namespace ConsoleApp1.SMLib
                 __Instance = IntPtr.Zero;
             }
 
-            public global::SMLib.SmcShutdownCancelledProc Callback
+            public SmcShutdownCancelledProc Callback
             {
                 get
                 {
                     var __ptr0 = ((__Internal*)__Instance)->callback;
-                    return __ptr0 == IntPtr.Zero? null : (global::SMLib.SmcShutdownCancelledProc) Marshal.GetDelegateForFunctionPointer(__ptr0, typeof(global::SMLib.SmcShutdownCancelledProc));
+                    return __ptr0 == IntPtr.Zero? null : (SmcShutdownCancelledProc) Marshal.GetDelegateForFunctionPointer(__ptr0, typeof(SmcShutdownCancelledProc));
                 }
 
                 set
                 {
-                    ((__Internal*)__Instance)->callback = value == null ? global::System.IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(value);
+                    ((__Internal*)__Instance)->callback = value == null ? IntPtr.Zero : Marshal.GetFunctionPointerForDelegate(value);
                 }
             }
 
@@ -501,14 +514,14 @@ namespace ConsoleApp1.SMLib
 
                 set
                 {
-                    ((__Internal*)__Instance)->client_data = (IntPtr) value;
+                    ((__Internal*)__Instance)->client_data = value;
                 }
             }
         }
 
         public IntPtr __Instance { get; protected set; }
 
-        internal static readonly global::System.Collections.Concurrent.ConcurrentDictionary<IntPtr, global::SMLib.SmcCallbacks> NativeToManagedMap = new global::System.Collections.Concurrent.ConcurrentDictionary<IntPtr, global::SMLib.SmcCallbacks>();
+        internal static readonly ConcurrentDictionary<IntPtr, SmcCallbacks> NativeToManagedMap = new ConcurrentDictionary<IntPtr, SmcCallbacks>();
 
         protected bool __ownsNativeInstance;
 
@@ -522,7 +535,7 @@ namespace ConsoleApp1.SMLib
             if (native == IntPtr.Zero)
                 return null;
             if (NativeToManagedMap.TryGetValue(native, out var managed))
-                return (SmcCallbacks)managed;
+                return managed;
             var result = __CreateInstance(native, skipVTables);
             if (saveInstance)
                 NativeToManagedMap[native] = result;
@@ -557,17 +570,17 @@ namespace ConsoleApp1.SMLib
 
         public SmcCallbacks()
         {
-            __Instance = Marshal.AllocHGlobal(sizeof(global::SMLib.SmcCallbacks.__Internal));
+            __Instance = Marshal.AllocHGlobal(sizeof(__Internal));
             __ownsNativeInstance = true;
             NativeToManagedMap[__Instance] = this;
         }
 
-        public SmcCallbacks(global::SMLib.SmcCallbacks __0)
+        public SmcCallbacks(SmcCallbacks __0)
         {
-            __Instance = Marshal.AllocHGlobal(sizeof(global::SMLib.SmcCallbacks.__Internal));
+            __Instance = Marshal.AllocHGlobal(sizeof(__Internal));
             __ownsNativeInstance = true;
             NativeToManagedMap[__Instance] = this;
-            *((global::SMLib.SmcCallbacks.__Internal*) __Instance) = *((global::SMLib.SmcCallbacks.__Internal*) __0.__Instance);
+            *((__Internal*) __Instance) = *((__Internal*) __0.__Instance);
         }
 
         public void Dispose()
@@ -575,7 +588,10 @@ namespace ConsoleApp1.SMLib
             Dispose(disposing: true, callNativeDtor : __ownsNativeInstance );
         }
 
-        partial void DisposePartial(bool disposing);
+        private void DisposePartial(bool disposing)
+        {
+            throw new NotImplementedException();
+        }
 
         internal protected virtual void Dispose(bool disposing, bool callNativeDtor )
         {
@@ -588,63 +604,63 @@ namespace ConsoleApp1.SMLib
             __Instance = IntPtr.Zero;
         }
 
-        public global::SMLib.SmcCallbacks.SaveYourself save_yourself
+        public SaveYourself save_yourself
         {
             get
             {
-                return global::SMLib.SmcCallbacks.SaveYourself.__CreateInstance(new IntPtr(&((__Internal*)__Instance)->save_yourself));
+                return SaveYourself.__CreateInstance(new IntPtr(&((__Internal*)__Instance)->save_yourself));
             }
 
             set
             {
                 if (ReferenceEquals(value, null))
-                    throw new global::System.ArgumentNullException("value", "Cannot be null because it is passed by value.");
-                ((__Internal*)__Instance)->save_yourself = *(global::SMLib.SmcCallbacks.SaveYourself.__Internal*) value.__Instance;
+                    throw new ArgumentNullException("value", "Cannot be null because it is passed by value.");
+                ((__Internal*)__Instance)->save_yourself = *(SaveYourself.__Internal*) value.__Instance;
             }
         }
 
-        public global::SMLib.SmcCallbacks.Die die
+        public Die die
         {
             get
             {
-                return global::SMLib.SmcCallbacks.Die.__CreateInstance(new IntPtr(&((__Internal*)__Instance)->die));
+                return Die.__CreateInstance(new IntPtr(&((__Internal*)__Instance)->die));
             }
 
             set
             {
                 if (ReferenceEquals(value, null))
-                    throw new global::System.ArgumentNullException("value", "Cannot be null because it is passed by value.");
-                ((__Internal*)__Instance)->die = *(global::SMLib.SmcCallbacks.Die.__Internal*) value.__Instance;
+                    throw new ArgumentNullException("value", "Cannot be null because it is passed by value.");
+                ((__Internal*)__Instance)->die = *(Die.__Internal*) value.__Instance;
             }
         }
 
-        public global::SMLib.SmcCallbacks.SaveComplete save_complete
+        public SaveComplete save_complete
         {
             get
             {
-                return global::SMLib.SmcCallbacks.SaveComplete.__CreateInstance(new IntPtr(&((__Internal*)__Instance)->save_complete));
+                return SaveComplete.__CreateInstance(new IntPtr(&((__Internal*)__Instance)->save_complete));
             }
 
             set
             {
                 if (ReferenceEquals(value, null))
-                    throw new global::System.ArgumentNullException("value", "Cannot be null because it is passed by value.");
-                ((__Internal*)__Instance)->save_complete = *(global::SMLib.SmcCallbacks.SaveComplete.__Internal*) value.__Instance;
+                    throw new ArgumentNullException("value", "Cannot be null because it is passed by value.");
+                ((__Internal*)__Instance)->save_complete = *(SaveComplete.__Internal*) value.__Instance;
             }
         }
 
-        public global::SMLib.SmcCallbacks.ShutdownCancelled shutdown_cancelled
+        public ShutdownCancelled shutdown_cancelled
         {
             get
             {
-                return global::SMLib.SmcCallbacks.ShutdownCancelled.__CreateInstance(new IntPtr(&((__Internal*)__Instance)->shutdown_cancelled));
+                return ShutdownCancelled.__CreateInstance(new IntPtr(&((__Internal*)__Instance)->shutdown_cancelled));
             }
 
             set
             {
                 if (ReferenceEquals(value, null))
-                    throw new global::System.ArgumentNullException("value", "Cannot be null because it is passed by value.");
-                ((__Internal*)__Instance)->shutdown_cancelled = *(global::SMLib.SmcCallbacks.ShutdownCancelled.__Internal*) value.__Instance;
+                    throw new ArgumentNullException("value", "Cannot be null because it is passed by value.");
+                ((__Internal*)__Instance)->shutdown_cancelled = *(ShutdownCancelled.__Internal*) value.__Instance;
             }
         }
     }
