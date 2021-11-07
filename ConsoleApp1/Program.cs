@@ -49,6 +49,9 @@ namespace ConsoleApp1
 
             public XsmpClient()
             {
+                
+                 
+                
                 IntPtr a = IntPtr.Zero, b = IntPtr.Zero;
 
                 string[] i = new[] {""};
@@ -61,46 +64,20 @@ namespace ConsoleApp1
                 var errorBuf = new byte[127];
 
                 var x = new SmcCallbacks();
-                var zz = new SmcShutdownCancelledProc(((conn, data) => { }));
-
-
-                x.shutdown_cancelled = (void*)Marshal.GetFunctionPointerForDelegate(new SmcShutdownCancelledProc((
-                    (conn, data) =>
-                    {
-                        
-                    })));
-
-
-                x.die = (void*)Marshal.GetFunctionPointerForDelegate(new SmcDieProc((
-                    (conn, data) =>
-                    {
-                        
-                    })));
-
-
-                x.save_yourself = (void*)Marshal.GetFunctionPointerForDelegate(new SmcSaveYourselfProc((
-                    (conn, data, type, shutdown, style, fast) =>
-                    {
-                        
-                    })));
-
-                x.save_complete = (void*)Marshal.GetFunctionPointerForDelegate(new SmcSaveCompleteProc(((
-                    (conn, data) =>
-                    {
-                        
-                    }))));
-                ;
-
+                
+                x.shutdown_cancelled = (void*)Marshal.GetFunctionPointerForDelegate(SmcShutdownCancelledProcDel);
+ 
                 fixed (byte* p = errorBuf)
                 {
                     var ptr = (IntPtr) p;
 
                     _smcConn = SmcOpenConnection(IntPtr.Zero,
                         IntPtr.Zero, 1, 0,
-                        SmcSaveYourselfProcMask |
-                        SmcSaveCompleteProcMask |
-                        SmcShutdownCancelledProcMask |
-                        SmcDieProcMask,
+                        // SmcSaveYourselfProcMask |
+                        // SmcSaveCompleteProcMask |
+                        SmcShutdownCancelledProcMask 
+                        // SmcDieProcMask
+                        ,
                         &x,
                         out var tt1, out var ep2, errorBuf.Length, ptr);
                 }
@@ -150,6 +127,13 @@ namespace ConsoleApp1
                 }
             }
 
+            public static void SmcShutdownCancelledProcFunc(SmcConn a, SmPointer b)
+            {
+                Console.WriteLine("a");
+            }
+
+            public static readonly SmcShutdownCancelledProc SmcShutdownCancelledProcDel = SmcShutdownCancelledProcFunc;
+
 
             [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
             public delegate void SmcSaveYourselfProc(
@@ -173,7 +157,7 @@ namespace ConsoleApp1
                 SmPointer clientData
             );
 
-            [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
             public delegate void SmcShutdownCancelledProc(
                 SmcConn smcConn,
                 SmPointer clientData
