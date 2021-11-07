@@ -1,11 +1,14 @@
 ﻿using System;
-using System.Linq;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using SmPointer = System.IntPtr;
 using SmcConn = System.IntPtr;
 using SmProp = System.IntPtr;
+using IcePointer = System.IntPtr;
+using IceConn = System.IntPtr;
 
 namespace ConsoleApp1
 {
@@ -27,69 +30,29 @@ namespace ConsoleApp1
             private const ulong SmcShutdownCancelledProcMask = (1L << 3);
 
             private readonly IntPtr _smcConn;
-
-            public static void ShutdownCancelled(SmcConn a,
-                SmPointer b
-            )
-            {
-            }
-
-
-            public static void SaveYourself(
-                SmcConn smcConn,
-                SmPointer clientData,
-                int saveType,
-                bool shutdown,
-                int interactStyle,
-                bool fast
-            )
-            {
-            }
-
+ 
+            static bool   xsmp_save_yourself;
+            static bool   xsmp_shutdown;
 
             public XsmpClient()
             {
-                IntPtr a = IntPtr.Zero, b = IntPtr.Zero;
-
-                string[] i = new[] {""};
-                string error = " testerror", prevId = "";
-
-                var p1 = IntPtr.Zero;
-                var p2 = IntPtr.Zero;
-                var p3 = IntPtr.Zero;
-
                 var errorBuf = new byte[127];
 
-                var x = new SmcCallbacks();
-                var zz = new SmcShutdownCancelledProc(((conn, data) => { }));
+                var x = new SmcCallbacks
+                {
+                    shutdown_cancelled = Marshal.GetFunctionPointerForDelegate(SmcShutdownCancelledDelegate),
+                    die = Marshal.GetFunctionPointerForDelegate(SmcDieDelegate),
+                    save_yourself = Marshal.GetFunctionPointerForDelegate(SmcSaveYourselfProcDelegate),
+                    save_complete = Marshal.GetFunctionPointerForDelegate(SmcSaveCompleteDelegate)
+                };
 
 
-                x.shutdown_cancelled = (void*)Marshal.GetFunctionPointerForDelegate(new SmcShutdownCancelledProc((
-                    (conn, data) =>
-                    {
-                        
-                    })));
-
-
-                x.die = (void*)Marshal.GetFunctionPointerForDelegate(new SmcDieProc((
-                    (conn, data) =>
-                    {
-                        
-                    })));
-
-
-                x.save_yourself = (void*)Marshal.GetFunctionPointerForDelegate(new SmcSaveYourselfProc((
-                    (conn, data, type, shutdown, style, fast) =>
-                    {
-                        
-                    })));
-
-                x.save_complete = (void*)Marshal.GetFunctionPointerForDelegate(new SmcSaveCompleteProc(((
-                    (conn, data) =>
-                    {
-                        
-                    }))));
-                ;
+                if (IceAddConnectionWatch(Marshal.GetFunctionPointerForDelegate(IceWatchProcDelegate),
+                    IntPtr.Zero) == 0)
+                {
+                    Console.WriteLine("XSMP ICE connection watch failed\n");
+                    return;
+                }
 
                 fixed (byte* p = errorBuf)
                 {
@@ -111,45 +74,114 @@ namespace ConsoleApp1
                     Console.WriteLine($"Error! {errorString}");
                 }
 
-                var progName = "Avalonia XSMP Client";
-                var progNameBytes = Encoding.ASCII.GetBytes(progName);
-                fixed (byte* asd = &progNameBytes[0])
+                xsmp_iceconn = SmcGetIceConnection(_smcConn);
+
+                Task.Run(() =>
                 {
-                    var sadasd = (IntPtr) asd;
-
-                    var smname = new SmPropValue();
-                    smname.Length = progNameBytes.Length;
-                    smname.Value = sadasd;
-
-                    var propArray = new[] {smname};
-                    var nameBa = Encoding.ASCII.GetBytes("SmProgram");
-                    var typeBa = Encoding.ASCII.GetBytes("SmARRAY8");
-
-                    fixed (SmPropValue* propValPtr = &propArray[0])
-                    fixed (byte* nameBaPtr = &nameBa[0])
-                    fixed (byte* typeBaPtr = &typeBa[0])
+                    while (true)
                     {
-                        var smnameprop = new SmProp();
-                        smnameprop.Name = nameBaPtr;
-                        smnameprop.Type = typeBaPtr;
-                        smnameprop.NumVals = 1;
-                        smnameprop.Vals = propValPtr;
-
-                        var propsf = new[] {smnameprop};
-
-                        fixed (SmProp* l1 = &propsf[0])
-                        {
-                            var propsf0 = new[] {l1};
-
-                            fixed (SmProp** l2 = &propsf0[0])
-                            {
-                                SmcSetProperties(_smcConn, 1, l2);
-                            }
-                        }
+                        xsmp_handle_requests();
+                        // Thread.Sleep(10);
                     }
+                });
+            }
+
+
+            void xsmp_handle_requests()
+            {
+
+                if (IceProcessMessages(xsmp_iceconn, out var a, out var rep) == IceProcessMessagesStatus.IceProcessMessagesIOError)
+                {
+                    // Lost ICE
+                    Console.WriteLine("XSMP lost ICE connection\n");
+                    throw new Exception();
+                }
+                else
+                {
+                    Console.WriteLine("XSMP IceProcessMessages\n");
+                    
                 }
             }
 
+            public static IceConn xsmp_iceconn;
+            public static readonly int dummy = 0;
+
+            public static readonly SmcSaveYourselfProc SmcSaveYourselfProcDelegate = SmcSaveYourselfHandler;
+            public static readonly SmcDieProc SmcDieDelegate = SmcDieHandler;
+            public static readonly SmcShutdownCancelledProc SmcShutdownCancelledDelegate = SmcShutdownCancelledHandler;
+            public static readonly SmcSaveCompleteProc SmcSaveCompleteDelegate = SmcSaveCompleteHandler;
+            public static readonly IceWatchProc IceWatchProcDelegate = IceWatchHandler;
+
+            public static void SmcSaveCompleteHandler(
+                SmcConn smcConn,
+                SmPointer clientData
+            )
+            {
+                Console.WriteLine("SmcSaveCompleteHandler");
+            }
+            public static void SmcShutdownCancelledHandler(
+                SmcConn smcConn,
+                SmPointer clientData
+            )
+            {
+                Console.WriteLine("SmcShutdownCancelledHandler");
+            }
+
+
+            [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+            public delegate void SmcShutdownCancelledProc(
+                SmcConn smcConn,
+                SmPointer clientData
+            );
+            
+            public static void SmcDieHandler(
+                SmcConn smcConn,
+                SmPointer clientData
+            )
+            {
+                Console.WriteLine("SmcDieHandler");
+            }
+
+            public static void SmcSaveYourselfHandler(
+                SmcConn smcConn,
+                SmPointer clientData,
+                int saveType,
+                bool shutdown,
+                int interactStyle,
+                bool fast
+            )
+            {
+                Console.WriteLine("SmcSaveYourselfHandler");
+
+                if (xsmp_save_yourself)
+                    SmcSaveYourselfDone(smcConn, false);
+                xsmp_save_yourself = true;
+                xsmp_shutdown = shutdown;
+                SmcSaveYourselfDone(smcConn, false);
+            }
+
+
+            private static int xsmp_icefd;
+
+            static void IceWatchHandler(
+                IceConn iceConn,
+                IcePointer clientData,
+                bool opening,
+                IcePointer* watchData
+            )
+            {
+                if (!opening) return;
+                xsmp_icefd = IceConnectionNumber(iceConn);
+                IceRemoveConnectionWatch(Marshal.GetFunctionPointerForDelegate(IceWatchProcDelegate), IntPtr.Zero);
+            }
+
+            [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+            public delegate void IceWatchProc(
+                IceConn iceConn,
+                IcePointer clientData,
+                bool opening,
+                IcePointer* watchData
+            );
 
             [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
             public delegate void SmcSaveYourselfProc(
@@ -172,56 +204,50 @@ namespace ConsoleApp1
                 SmcConn smcConn,
                 SmPointer clientData
             );
-
-            [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-            public delegate void SmcShutdownCancelledProc(
-                SmcConn smcConn,
-                SmPointer clientData
-            );
-
+ 
             public struct SmProp
             {
-                public byte* Name; /* name of property */
-                public byte* Type; /* type of property */
-                public int NumVals; /* number of values */
-                public SmPropValue* Vals; /* the list of values */
-            };
+                public byte* Name;
+                public byte* Type;
+                public int NumVals;
+                public SmPropValue* Vals;
+            }
 
             public struct SmPropValue
             {
-                public int Length; /* the length of the value */
-                public SmPointer Value; /* the value */
-            };
+                public int Length;
+                public SmPointer Value;
+            }
             //
             // [StructLayout(LayoutKind.Sequential)]
             // public struct SmcCallbacks
             // {
             //     public delegate* unmanaged[Cdecl] <
-            //         SmcConn /* smcConn */,
-            //         SmPointer /* clientData */,
-            //         int /* saveType */,
-            //         bool /* shutdown */,
-            //         int /* interactStyle */,
-            //         bool /* fast */,
+            //         SmcConn  smcConn ,
+            //         SmPointer  clientData ,
+            //         int  saveType ,
+            //         bool  shutdown ,
+            //         int  interactStyle ,
+            //         bool  fast ,
             //         void > save_yourself;
             //
             //     public SmPointer save_yourself_client_data;
             //
             //     public delegate* unmanaged[Cdecl] <
-            //         SmcConn /* smcConn */,
-            //         SmPointer /* clientData */,
+            //         SmcConn  smcConn ,
+            //         SmPointer  clientData ,
             //         void> die;
             //
             //     public SmPointer die_client_data;
             //
-            //     public delegate* unmanaged[Cdecl] < SmcConn /* smcConn */,
-            //         SmPointer /* clientData */,
+            //     public delegate* unmanaged[Cdecl] < SmcConn  smcConn ,
+            //         SmPointer  clientData ,
             //         void> save_complete;
             //
             //     public SmPointer save_complete_client_data;
             //
-            //     public delegate* unmanaged[Cdecl] < SmcConn /* smcConn */,
-            //         SmPointer /* clientData */,
+            //     public delegate* unmanaged[Cdecl] < SmcConn  smcConn ,
+            //         SmPointer  clientData ,
             //         void> shutdown_cancelled;
             //
             //     public SmPointer shutdown_cancelled_client_data;
@@ -231,19 +257,19 @@ namespace ConsoleApp1
             [StructLayout(LayoutKind.Sequential)]
             public struct SmcCallbacks
             {
-                public void* save_yourself;
+                public IntPtr save_yourself;
 
                 public SmPointer save_yourself_client_data;
 
-                public void* die;
+                public IntPtr die;
 
                 public SmPointer die_client_data;
 
-                public void* save_complete;
+                public IntPtr save_complete;
 
                 public SmPointer save_complete_client_data;
 
-                public void* shutdown_cancelled;
+                public IntPtr shutdown_cancelled;
 
                 public SmPointer shutdown_cancelled_client_data;
             }
@@ -259,6 +285,15 @@ namespace ConsoleApp1
                 out IntPtr clientIdRet,
                 int errorLength,
                 IntPtr errorStringRet);
+
+
+            public enum IceProcessMessagesStatus
+            {
+                IceProcessMessagesSuccess,
+                IceProcessMessagesIOError,
+                IceProcessMessagesConnectionClosed
+            }
+
 
             public enum SmcCloseStatus
             {
@@ -282,6 +317,59 @@ namespace ConsoleApp1
                 int numProps,
                 SmProp** props
             );
+            
+            [DllImport("libSM.so.6", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+            public static extern void SmcSaveYourselfDone(
+                SmcConn smcConn,
+                bool success
+             );
+
+             
+
+
+            [DllImport("libSM.so.6", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+            public static extern IceConn SmcGetIceConnection(
+                SmcConn smcConn
+            );
+
+
+            [DllImport("libICE.so.6", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+            public static extern int IceAddConnectionWatch(
+                IntPtr watchProc,
+                IcePointer clientData
+            );
+
+
+            [DllImport("libICE.so.6", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+            public static extern int IceConnectionNumber(
+                IntPtr iceConn
+            );
+
+
+            [DllImport("libICE.so.6", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+            public static extern int IceRemoveConnectionWatch(
+                IntPtr watchProc,
+                IcePointer clientData
+            );
+            
+            
+
+
+            [DllImport("libICE.so.6", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+            public static extern IceProcessMessagesStatus IceProcessMessages(
+                IceConn iceConn ,
+                out IceReplyWaitInfo replyWait ,
+                out bool replyReadyRet
+            );
+
+            public struct IceReplyWaitInfo
+            {
+                ulong sequence_of_request;
+                int major_opcode_of_request;
+                int minor_opcode_of_request;
+                IcePointer reply;
+            };
+
 
             public void Dispose()
             {
