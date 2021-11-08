@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -143,6 +144,10 @@ namespace ConsoleApp1
             )
             {
                 Console.WriteLine("SmcDieHandler");
+                var stat = SmcCloseConnection(smcConn, 1, new[]
+                {
+                    $"Session manager was terminated.",
+                });
             }
 
             public static void SmcSaveYourselfHandler(
@@ -183,8 +188,7 @@ namespace ConsoleApp1
                  
                  //call the shutdownrequested callback here.
  
-                // Done interaction
-                Console.WriteLine("Cancelling Shutdown...");
+                 Console.WriteLine("Cancelling Shutdown...");
                 SmcInteractDone(smcConn, cancel_shutdown);
  
                 if (!cancel_shutdown)
@@ -392,10 +396,9 @@ namespace ConsoleApp1
             {
                 if (_smcConn != IntPtr.Zero)
                 {
-                    var stat = SmcCloseConnection(_smcConn, 0, new[]
+                    var stat = SmcCloseConnection(_smcConn, 1, new[]
                     {
-                        "Test 1",
-                        "Test 2"
+                        $"{nameof(XsmpClient)} was disposed in managed code.",
                     });
                 }
             }
