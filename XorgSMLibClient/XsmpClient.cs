@@ -9,10 +9,13 @@ namespace XorgSMLibClient
 {
     public unsafe class XsmpClient : IDisposable
     {
-        private const ulong SmcSaveYourselfProcMask = 1L << 0;
-        private const ulong SmcDieProcMask = 1L << 1;
-        private const ulong SmcSaveCompleteProcMask = 1L << 2;
-        private const ulong SmcShutdownCancelledProcMask = 1L << 3;
+        private const ulong SmcSaveYourselfProcMask = 1L;
+        private const ulong SmcDieProcMask = 2L;
+        private const ulong SmcSaveCompleteProcMask = 4L;
+        private const ulong SmcShutdownCancelledProcMask = 8L;
+
+        private const string LibSm = "libSM.so.6";
+        private const string LibIce = "libICE.so.6";
 
         private static readonly ConcurrentDictionary<IntPtr, XsmpClient> NativeToManagedMapper = new();
         private static readonly SmcSaveYourselfProc StaticSaveYourselfProcDelegate = SmcSaveYourselfHandler;
@@ -201,7 +204,7 @@ namespace XorgSMLibClient
                 IntPtr.Zero);
         }
 
-        [DllImport("libSM.so.6", CharSet = CharSet.Ansi)]
+        [DllImport(LibSm, CharSet = CharSet.Ansi)]
         private static extern IntPtr SmcOpenConnection(
             [MarshalAs(UnmanagedType.LPWStr)] string networkId,
             IntPtr content,
@@ -216,20 +219,20 @@ namespace XorgSMLibClient
             int errorLength,
             [Out] char[] errorStringRet);
 
-        [DllImport("libSM.so.6", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        [DllImport(LibSm, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         private static extern int SmcCloseConnection(
             IntPtr smcConn,
             int count,
             string[] reasonMsgs
         );
 
-        [DllImport("libSM.so.6", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        [DllImport(LibSm, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         private static extern void SmcSaveYourselfDone(
             IntPtr smcConn,
             bool success
         );
 
-        [DllImport("libSM.so.6", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        [DllImport(LibSm, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         private static extern int SmcInteractRequest(
             IntPtr smcConn,
             SmDialogValue dialogType,
@@ -237,35 +240,35 @@ namespace XorgSMLibClient
             IntPtr clientData
         );
 
-        [DllImport("libSM.so.6", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        [DllImport(LibSm, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         private static extern void SmcInteractDone(
             IntPtr smcConn,
             bool success
         );
 
-        [DllImport("libSM.so.6", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        [DllImport(LibSm, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         private static extern IntPtr SmcGetIceConnection(
             IntPtr smcConn
         );
 
-        [DllImport("libSM.so.6", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        [DllImport(LibSm, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         private static extern IntPtr SmcSetErrorHandler(
             IntPtr handler
         );
 
-        [DllImport("libICE.so.6", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        [DllImport(LibIce, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         private static extern int IceAddConnectionWatch(
             IntPtr watchProc,
             IntPtr clientData
         );
 
-        [DllImport("libICE.so.6", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        [DllImport(LibIce, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         private static extern void IceRemoveConnectionWatch(
             IntPtr watchProc,
             IntPtr clientData
         );
 
-        [DllImport("libICE.so.6", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        [DllImport(LibIce, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         private static extern IceProcessMessagesStatus IceProcessMessages(
             IntPtr iceConn,
             out IntPtr replyWait,
