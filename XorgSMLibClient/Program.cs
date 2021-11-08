@@ -2,7 +2,7 @@
 using System;
 using SmProp = System.IntPtr;
 
-namespace ConsoleApp1
+namespace XorgSMLibClient
 {
     internal static class Program
     {

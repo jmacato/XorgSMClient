@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ConsoleApp1
+namespace XorgSMLibClient
 {
     public unsafe class XsmpClient : IDisposable
     {
@@ -17,10 +17,7 @@ namespace ConsoleApp1
         private static readonly ConcurrentDictionary<IntPtr, XsmpClient> NativeToManagedMapper = new();
         private static readonly SmcSaveYourselfProc StaticSaveYourselfProcDelegate = SmcSaveYourselfHandler;
         private static readonly SmcDieProc StaticDieDelegate = SmcDieHandler;
-
-        private static readonly SmcShutdownCancelledProc StaticShutdownCancelledDelegate =
-            SmcShutdownCancelledHandler;
-
+        private static readonly SmcShutdownCancelledProc StaticShutdownCancelledDelegate = SmcShutdownCancelledHandler;
         private static readonly SmcSaveCompleteProc StaticSaveCompleteDelegate = SmcSaveCompleteHandler;
         private static readonly SmcInteractProc SmcInteractDelegate = StaticInteractHandler;
         private static readonly SmcErrorHandler SmcErrorHandlerDelegate = StaticErrorHandler;
@@ -124,15 +121,7 @@ namespace ConsoleApp1
         }
         
         
-        private static void StaticErrorHandler(
-            IntPtr smcConn,
-            bool swap,
-            int offendingMinorOpcode,
-            ulong offendingSequence,
-            int errorClass,
-            int severity,
-            IntPtr values
-        )
+        private static void StaticErrorHandler(IntPtr smcConn, bool swap, int offendingMinorOpcode, ulong offendingSequence, int errorClass, int severity, IntPtr values)
         {
             GetInstance(smcConn)?.ErrorHandler(swap, offendingMinorOpcode, offendingSequence, errorClass, severity, values);
         }
