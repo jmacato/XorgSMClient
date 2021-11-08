@@ -30,14 +30,12 @@ namespace ConsoleApp1
             private const ulong SmcShutdownCancelledProcMask = (1L << 3);
 
             private readonly IntPtr _smcConn;
- 
-            static bool   xsmp_save_yourself;
-            static bool   xsmp_shutdown;
+
+            static bool xsmp_save_yourself;
+            static bool xsmp_shutdown;
 
             public XsmpClient()
             {
-                var errorBuf = new byte[255];
-
                 var x = new SmcCallbacks
                 {
                     shutdown_cancelled = Marshal.GetFunctionPointerForDelegate(SmcShutdownCancelledDelegate),
@@ -45,7 +43,7 @@ namespace ConsoleApp1
                     save_yourself = Marshal.GetFunctionPointerForDelegate(SmcSaveYourselfProcDelegate),
                     save_complete = Marshal.GetFunctionPointerForDelegate(SmcSaveCompleteDelegate)
                 };
-                
+
                 if (IceAddConnectionWatch(Marshal.GetFunctionPointerForDelegate(IceWatchProcDelegate),
                     IntPtr.Zero) == 0)
                 {
@@ -53,24 +51,23 @@ namespace ConsoleApp1
                     return;
                 }
 
-                fixed (byte* p = errorBuf)
-                {
-                    var ptr = (IntPtr) p;
+                var errorBuf = new char[255];
+                _smcConn = SmcOpenConnection(null,
+                    IntPtr.Zero, 1, 0,
+                    SmcSaveYourselfProcMask |
+                    SmcSaveCompleteProcMask |
+                    SmcShutdownCancelledProcMask |
+                    SmcDieProcMask,
+                    &x,
+                    out var tt1,
+                    out var ep2,
+                    errorBuf.Length,
+                    errorBuf);
 
-                    _smcConn = SmcOpenConnection(IntPtr.Zero,
-                        IntPtr.Zero, 1, 0,
-                        SmcSaveYourselfProcMask |
-                        SmcSaveCompleteProcMask |
-                        SmcShutdownCancelledProcMask |
-                        SmcDieProcMask,
-                        &x,
-                        out var tt1, out var ep2, errorBuf.Length, ptr);
-                }
 
                 if (_smcConn == IntPtr.Zero)
                 {
-                    var errorString = Encoding.ASCII.GetString(errorBuf);
-                    Console.WriteLine($"Error! {errorString}");
+                    throw new InvalidOperationException(new string(errorBuf));
                 }
 
                 xsmp_iceconn = SmcGetIceConnection(_smcConn);
@@ -87,8 +84,8 @@ namespace ConsoleApp1
 
             void HandleRequests()
             {
-
-                if (IceProcessMessages(xsmp_iceconn, out var a, out var rep) == IceProcessMessagesStatus.IceProcessMessagesIOError)
+                if (IceProcessMessages(xsmp_iceconn, out var a, out var rep) ==
+                    IceProcessMessagesStatus.IceProcessMessagesIOError)
                 {
                     // Lost ICE
                     Console.WriteLine("XSMP lost ICE connection\n");
@@ -102,12 +99,13 @@ namespace ConsoleApp1
 
             public static IceConn xsmp_iceconn;
             public static readonly int dummy = 0;
-            public static bool isFirstOneSaveYourselfCall ;
+            public static bool isFirstOneSaveYourselfCall;
 
             public static readonly SmcSaveYourselfProc SmcSaveYourselfProcDelegate = SmcSaveYourselfHandler;
             public static readonly SmcDieProc SmcDieDelegate = SmcDieHandler;
             public static readonly SmcShutdownCancelledProc SmcShutdownCancelledDelegate = SmcShutdownCancelledHandler;
             public static readonly SmcSaveCompleteProc SmcSaveCompleteDelegate = SmcSaveCompleteHandler;
+            public static readonly SmcInteractProc SmcInteractDelegate = SmcInteractHandler;
             public static readonly IceWatchProc IceWatchProcDelegate = IceWatchHandler;
 
             public static void SmcSaveCompleteHandler(
@@ -116,13 +114,20 @@ namespace ConsoleApp1
             )
             {
                 Console.WriteLine("SmcSaveCompleteHandler");
+                xsmp_save_yourself = false;
             }
+
             public static void SmcShutdownCancelledHandler(
                 SmcConn smcConn,
                 SmPointer clientData
             )
             {
                 Console.WriteLine("SmcShutdownCancelledHandler");
+
+                if (xsmp_save_yourself)
+                    SmcSaveYourselfDone(smcConn, true);
+                xsmp_save_yourself = false;
+                xsmp_shutdown = false;
             }
 
 
@@ -131,7 +136,7 @@ namespace ConsoleApp1
                 SmcConn smcConn,
                 SmPointer clientData
             );
-            
+
             public static void SmcDieHandler(
                 SmcConn smcConn,
                 SmPointer clientData
@@ -150,23 +155,46 @@ namespace ConsoleApp1
             )
             {
                 Console.WriteLine("SmcSaveYourselfHandler");
+ 
+                if (xsmp_save_yourself)
+                    SmcSaveYourselfDone(smcConn, true);
 
-                if (isFirstOneSaveYourselfCall)
+                xsmp_save_yourself = true;
+                xsmp_shutdown = shutdown;
+
+                // Now see if we can ask about unsaved files
+                if (shutdown && !fast)
                 {
+                    SmcInteractRequest(smcConn, SmDialogValue.SmDialogError,
+                        Marshal.GetFunctionPointerForDelegate(SmcInteractDelegate),
+                        clientData);
+                }
+                else
+                {
+                    // Can stop the cycle here
+                    SmcSaveYourselfDone(smcConn, true);
+                    xsmp_save_yourself = false;
+                }
+            }
+
+            static void SmcInteractHandler(SmcConn smcConn, SmPointer client_data) 
+            {
+                 var cancel_shutdown = true;
+                 
+                 //call the shutdownrequested callback here.
+ 
+                // Done interaction
+                Console.WriteLine("Cancelling Shutdown...");
+                SmcInteractDone(smcConn, cancel_shutdown);
+ 
+                if (!cancel_shutdown)
+                {
+                    xsmp_save_yourself = false;
                     SmcSaveYourselfDone(smcConn, true);
                 }
-
-                isFirstOneSaveYourselfCall = true;
-                 
-                xsmp_shutdown = shutdown;
-                SmcSaveYourselfDone(smcConn, false);
             }
-            
-            static void IceWatchHandler(
-                IceConn iceConn,
-                IcePointer clientData,
-                bool opening,
-                IcePointer* watchData
+
+            static void IceWatchHandler(IceConn iceConn, IcePointer clientData, bool opening, IcePointer* watchData
             )
             {
                 if (!opening) return;
@@ -202,7 +230,14 @@ namespace ConsoleApp1
                 SmcConn smcConn,
                 SmPointer clientData
             );
- 
+
+
+            [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+            public delegate void SmcInteractProc(
+                SmcConn smcConn,
+                SmPointer clientData
+            );
+
             public struct SmProp
             {
                 public byte* Name;
@@ -215,7 +250,13 @@ namespace ConsoleApp1
             {
                 public int Length;
                 public SmPointer Value;
-            } 
+            }
+
+            public enum SmDialogValue
+            {
+                SmDialogError = 0,
+                SmDialogNormal = 1
+            }
 
 
             [StructLayout(LayoutKind.Sequential)]
@@ -239,16 +280,17 @@ namespace ConsoleApp1
             }
 
             [DllImport("libSM.so.6", CharSet = CharSet.Ansi)]
-            public static extern SmcConn SmcOpenConnection(IntPtr networkId,
+            public static extern SmcConn SmcOpenConnection(
+                [MarshalAs(UnmanagedType.LPStr)] string networkId,
                 IntPtr content,
                 int xsmpMajorRev,
                 int xsmpMinorRev,
                 ulong mask,
                 SmcCallbacks* callbacks,
-                out string previousId,
-                out IntPtr clientIdRet,
+                [MarshalAs(UnmanagedType.LPStr), Out] out string previousId,
+                [MarshalAs(UnmanagedType.LPStr), Out] out string clientIdRet,
                 int errorLength,
-                IntPtr errorStringRet);
+                [Out] char[] errorStringRet);
 
 
             public enum IceProcessMessagesStatus
@@ -281,15 +323,28 @@ namespace ConsoleApp1
                 int numProps,
                 SmProp** props
             );
-            
+
             [DllImport("libSM.so.6", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
             public static extern void SmcSaveYourselfDone(
                 SmcConn smcConn,
                 bool success
-             );
+            );
 
-             
 
+            [DllImport("libSM.so.6", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+            public static extern int SmcInteractRequest(
+                SmcConn smcConn,
+                SmDialogValue dialogType,
+                IntPtr interactProc,
+                SmPointer clientData
+            );
+
+
+            [DllImport("libSM.so.6", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+            public static extern void SmcInteractDone(
+                SmcConn smcConn,
+                bool success
+            );
 
             [DllImport("libSM.so.6", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
             public static extern IceConn SmcGetIceConnection(
@@ -315,14 +370,12 @@ namespace ConsoleApp1
                 IntPtr watchProc,
                 IcePointer clientData
             );
-            
-            
 
 
             [DllImport("libICE.so.6", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
             public static extern IceProcessMessagesStatus IceProcessMessages(
-                IceConn iceConn ,
-                out IceReplyWaitInfo replyWait ,
+                IceConn iceConn,
+                out IceReplyWaitInfo replyWait,
                 out bool replyReadyRet
             );
 
