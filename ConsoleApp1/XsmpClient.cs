@@ -22,9 +22,10 @@ namespace ConsoleApp1
             SmcShutdownCancelledHandler;
 
         private static readonly SmcSaveCompleteProc StaticSaveCompleteDelegate = SmcSaveCompleteHandler;
-        private static readonly SmcInteractProc SmcInteractDelegate = SmcInteractHandler;
+        private static readonly SmcInteractProc SmcInteractDelegate = StaticInteractHandler;
+        private static readonly SmcErrorHandler SmcErrorHandlerDelegate = StaticErrorHandler;
         private static readonly IceWatchProc IceWatchProcDelegate = IceWatchHandler;
-
+        
         private static SmcCallbacks _callbacks = new()
         {
             shutdown_cancelled = Marshal.GetFunctionPointerForDelegate(StaticShutdownCancelledDelegate),
@@ -57,8 +58,8 @@ namespace ConsoleApp1
                 SmcShutdownCancelledProcMask |
                 SmcDieProcMask,
                 ref _callbacks,
-                out _,
-                out _,
+                out   _,
+                out   _,
                 errorBuf.Length,
                 errorBuf);
 
@@ -66,6 +67,9 @@ namespace ConsoleApp1
 
             if (!NativeToManagedMapper.TryAdd(smcConn, this))
                 throw new InvalidOperationException("Was unable to add instance to the native to managed map.");
+
+
+            var __ = SmcSetErrorHandler(Marshal.GetFunctionPointerForDelegate(SmcErrorHandlerDelegate));
 
             _currentSmcConn = smcConn;
             _currentIceConn = SmcGetIceConnection(smcConn);
@@ -114,9 +118,28 @@ namespace ConsoleApp1
             GetInstance(smcConn)?.SaveYourselfHandler(smcConn, clientData, shutdown, fast);
         }
 
-        private static void SmcInteractHandler(IntPtr smcConn, IntPtr clientData)
+        private static void StaticInteractHandler(IntPtr smcConn, IntPtr clientData)
         {
             GetInstance(smcConn)?.InteractHandler(smcConn);
+        }
+        
+        
+        private static void StaticErrorHandler(
+            IntPtr smcConn,
+            bool swap,
+            int offendingMinorOpcode,
+            ulong offendingSequence,
+            int errorClass,
+            int severity,
+            IntPtr values
+        )
+        {
+            GetInstance(smcConn)?.ErrorHandler(swap, offendingMinorOpcode, offendingSequence, errorClass, severity, values);
+        }
+
+        private void ErrorHandler(bool swap, int offendingMinorOpcode, ulong offendingSequence, int errorClass, int severity, IntPtr values)
+        {
+            
         }
 
         private void HandleRequests()
@@ -124,33 +147,24 @@ namespace ConsoleApp1
             if (IceProcessMessages(_currentIceConn, out _, out _) ==
                 IceProcessMessagesStatus.IceProcessMessagesIoError)
             {
-                // Lost ICE
-                Console.WriteLine("XSMP lost ICE connection\n");
-                throw new Exception();
+                throw new InvalidOperationException("XSMP lost ICE connection");
             }
-
-            Console.WriteLine("XSMP IceProcessMessages\n");
         }
-
 
         private void SaveCompleteHandler()
         {
-            Console.WriteLine("SmcSaveCompleteHandler");
             _saveYourselfPhase = false;
         }
 
         private void ShutdownCancelledHandler()
         {
-            Console.WriteLine("SmcShutdownCancelledHandler");
             if (_saveYourselfPhase)
                 SmcSaveYourselfDone(_currentSmcConn, true);
             _saveYourselfPhase = false;
         }
 
-
         private void DieHandler()
         {
-            Console.WriteLine("SmcDieHandler");
             var _ = SmcCloseConnection(_currentSmcConn, 1, new[]
             {
                 "Session manager was terminated."
@@ -159,14 +173,13 @@ namespace ConsoleApp1
 
         private void SaveYourselfHandler(IntPtr smcConn, IntPtr clientData, bool shutdown, bool fast)
         {
-            Console.WriteLine("SmcSaveYourselfHandler");
             if (_saveYourselfPhase)
                 SmcSaveYourselfDone(smcConn, true);
             _saveYourselfPhase = true;
 
             if (shutdown && !fast)
             {
-                SmcInteractRequest(smcConn, SmDialogValue.SmDialogError,
+                var _ = SmcInteractRequest(smcConn, SmDialogValue.SmDialogError,
                     Marshal.GetFunctionPointerForDelegate(SmcInteractDelegate),
                     clientData);
             }
@@ -246,12 +259,16 @@ namespace ConsoleApp1
             IntPtr smcConn
         );
 
+        [DllImport("libSM.so.6", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        private static extern IntPtr SmcSetErrorHandler(
+            IntPtr handler
+        );
+
         [DllImport("libICE.so.6", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         private static extern int IceAddConnectionWatch(
             IntPtr watchProc,
             IntPtr clientData
         );
-
 
         [DllImport("libICE.so.6", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         private static extern void IceRemoveConnectionWatch(
@@ -307,6 +324,19 @@ namespace ConsoleApp1
             IntPtr smcConn,
             IntPtr clientData
         );
+
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        private delegate void SmcErrorHandler(
+            IntPtr smcConn,
+            bool swap,
+            int offendingMinorOpcode,
+            ulong offendingSequence,
+            int errorClass,
+            int severity,
+            IntPtr values
+        );
+
 
         private enum IceProcessMessagesStatus
         {
